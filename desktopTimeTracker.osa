@@ -39,22 +39,22 @@ set default_desktop_name to "unmonitored"
 -- POSIX path to the error log file (no spaces allowed)
 set error_log_file to "./project_log.err"
 -- Add custom statuses, in order of precedence (where if any described window is front-most or running, the plotting script will attribute that time using the statuses [e.g. "meeting"] instead of the desktop name), along with a list of app conditions that indicate that status.  The structure of the customStatusChecks list is: {"status string when conditions are met",{list of conditions necessary to return that status}}, where the "list of conditions..." is {{"app status of either 'running' or 'front'", "app name", {list of window name strings to match}},...}.  If the app status is "running", it checks if the app is running, and if any window strings are supplied: if any one of the windows in the list is open (not if it is in focus).  If the app status is "front", it checks if the app has focus, and if the list of window names has any strings in it, it checks if any one of the listed windows of that app has focus. E.g. set customStatusChecks to {{"Meeting",{{"running","zoom.us",{"Zoom Meeting"}}}}} -- will add "Meeting" to the list of returned statuses if the app "zoom.us" is running and if it has a window currently open containing the string "Zoom Meeting" in its name.  If those conditions are not met, the string "none" is added to the list of statuses.
-set customStatusChecks to {
-	{"meeting",
-		{
-			{"running", "zoom.us", {"Zoom Meeting"}}}},
-	{"communication",
-		{
-			{"front", "Mail", {}},
-			{"front", "gen-help", {}},
-			{"front", "Slack", {}}}},
-	{"planning",
-		{
-			{"front", "Calendar", {}},
-			{"front", "Trello", {}}}},
-	{"overhead",
-		{
-			{"front", "Princeton IT Self Service", {}},
+set customStatusChecks to {Â
+	{"meeting",Â
+		{Â
+			{"running", "zoom.us", {"Zoom Meeting"}}}},Â
+	{"communication",Â
+		{Â
+			{"front", "Mail", {}},Â
+			{"front", "gen-help", {}},Â
+			{"front", "Slack", {}}}},Â
+	{"planning",Â
+		{Â
+			{"front", "Calendar", {}},Â
+			{"front", "Trello", {}}}},Â
+	{"overhead",Â
+		{Â
+			{"front", "Princeton IT Self Service", {}},Â
 			{"front", "Safari", {"Holiday Schedule", "OIT Store", "Self Service", "TigerCard", "Tiger Transit"}}}}}
 
 --
