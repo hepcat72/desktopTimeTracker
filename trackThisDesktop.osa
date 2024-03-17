@@ -1,0 +1,192 @@
+#!/usr/bin/env osascript
+
+-- Convenience script to label a Desktop with a stickies window
+--     Run this script when you are on a desktop when you want time spent on that desktop to be tracked.
+--     Usage.  On the command line, in a terminal window, run:
+--         osascript trackThisDesktop.osa
+--     I recommend copying the content of this script and saving it as an app, for convenience, and put it in the dock.
+--     Note though that stickies windows collect on the first desktop after a reboot, so any windows created by this script will be moved after a reboot.  I intend to create a scaled down version of another script I wrote to automatically restore windows to their previous desktops.
+-- You will be prompted to enter a short 1-word project name and it will create a sticky window with:
+--     - A font large enough to be legible from the desktop thumbnail in Mission Control
+--     - A hidden string used for time tracking (a very tiny string "dtop" appended after the project name used to distinguish the desktop label window from other sticky windows.  (Note, if there are multiple windows with this string, the first arbitrary window is used.)
+--     - A superscripted project name that may be legible left of the dock if the dock isn't too wide.
+-- The Stickies window will be set to always float on top of all other windows, but it will be positioned under the dock so that it will mostly only be visible when in Mission Control.
+
+set scroll_ratio to 0.4
+set default_project_name to "UntrackedProject"
+
+set existing_label_win to my getFirstDesktopLabelStickyWindow()
+
+if not my isDockOnBottom() then
+	return "ERROR: This script was only designed to work when the dock is located on the bottom of the screen"
+else if existing_label_win is not null then
+	return "ERROR: A desktop label [" & (name of existing_label_win) & "] already exists on this desktop"
+end if
+
+set project_name to my prompt_for_project_name(default_project_name)
+
+return my createStickyFromTemplate(project_name, scroll_ratio)
+
+
+
+
+
+
+
+
+
+on isDockOnBottom()
+	tell application "System Events" to tell dock preferences to return screen edge is bottom
+end isDockOnBottom
+
+on prompt_for_project_name(default_project_name)
+	set project_name to default_project_name
+	repeat
+		display dialog "Enter a 1-word project name to use for attributing time spent on this desktop to work on that project:" default answer default_project_name buttons {"Cancel", "OK"} default button 2
+		set the project_name to the text returned of the result
+		
+		if the project_name contains " " then
+			beep
+			display dialog "A project name may not include any spaces." buttons {"Cancel", "OK"} default button 2
+		else
+			exit repeat
+		end if
+	end repeat
+	return project_name
+end prompt_for_project_name
+
+on getRTFContent(file_path_string)
+	-- Cannot figure out why I must use a tell system events here. I didn't in the separate script where I first wrote this...
+	tell application "System Events" to return (read file file_path_string as «class RTF »)
+end getRTFContent
+
+on getStickyTemplateRTFContent()
+	return my getRTFContent(my getStickyTemplateFilePathString())
+end getStickyTemplateRTFContent
+
+on getStickyTemplateFilePathString()
+	-- Returns a mac path string (not POSIX)
+	set template_path to my getRepoPOSIXPath() & "res/stickyTemplate.rtf"
+	return (POSIX file template_path) as string
+end getStickyTemplateFilePathString
+
+on getRepoPOSIXPath()
+	-- Assumes this script is being run from the repo location
+	return POSIX path of ((path to me as text) & "::")
+end getRepoPOSIXPath
+
+on createStickyFromTemplate(project_name, scroll_ratio)
+	-- Note, the template contains the substring used to identify desktop labels ("dtop") in a miniscule font size as the third word in the first line
+	set the clipboard to my getStickyTemplateRTFContent()
+	
+	tell application "Stickies"
+		activate
+	end tell
+	
+	tell application "System Events"
+		tell application process "Stickies"
+			tell menu bar 1
+				click menu item "New Note" of menu "File" of menu bar item "File"
+				delay 0.2
+				click menu item "Float on Top" of menu "Window" of menu bar item "Window"
+				delay 0.2
+				click menu item "Paste" of menu "Edit" of menu bar item "Edit"
+			end tell
+			
+			-- Put the cursor at the beginning (command up-arrow)
+			key code 126 using {command down}
+			-- Select the superscripted one-word placeholder (option shift right-arrow)
+			key code 124 using {option down, shift down}
+			-- Enter the project name (matching the superscript font style)
+			keystroke project_name
+			-- Advance the cursor 1 character (the one space in the template between the superscript and large text) (right-arrow)
+			key code 124
+			-- Select the large one-word placeholder (option shift right-arrow)
+			key code 124 using {option down, shift down}
+			-- Enter the project name (matching the large font style)
+			keystroke project_name
+			
+			
+			-- This is where we will put the window (under the dock)
+			set {dtopLabelPosition, dtopLabelSize} to my getDesktopLabelPosSize()
+			
+			delay 0.5
+			
+			set dtoplabelwin to first window whose name contains "dtop"
+			
+			set the size of dtoplabelwin to dtopLabelSize
+			set the position of dtoplabelwin to dtopLabelPosition
+			
+			-- This scroll position set deals with the inability to chenge line spacing in a Stickies note, by scrolling down a bit so that the large text of the desktop label can be read in the desktop thumbnails in mission control
+			set value of scroll bar 1 of scroll area 1 of dtoplabelwin to scroll_ratio
+			
+			return {size:size of dtoplabelwin, position:position of dtoplabelwin}
+			--return {size of dtoplabelwin, position of dtoplabelwin, docksize, dockpos, usableBounds}
+		end tell
+	end tell
+	
+end createStickyFromTemplate
+
+
+on getFirstDesktopLabelStickyWindow()
+	try
+		tell application "System Events"
+			tell application process "Stickies"
+				set dtoplabelwin to first window whose name contains "dtop"
+			end tell
+		end tell
+		return dtoplabelwin
+	on error
+		return null
+	end try
+end getFirstDesktopLabelStickyWindow
+
+on getDesktopLabelPosSize()
+	-- Dock position
+	set {dockpos, docksize} to my getDockPosSize()
+	-- Dimensions of the screen in pixels
+	set screenBounds to my getScreenBounds()
+	-- Dimensions of the screen between the bottom of the menu bar and the top of the dock
+	set usableBounds to my getMaximizeBounds()
+	
+	-- Horizontal position is minus 7 so that more text is visible poking out from under dock on the left side
+	-- Vertical position is plus 1 because "item 4 of usableBounds" is the last row of pixels above the dock
+	set dtopLabelPosition to {¬
+		-7, ¬
+		(item 4 of usableBounds) + 1}
+	
+	-- minus 5 so sticky corner under rounded dock corner
+	set dtopLabelSize to {¬
+		(item 1 of dockpos) + (item 1 of docksize) - 5, ¬
+		(item 4 of screenBounds) - (item 4 of usableBounds) - 1}
+	
+	return {dtopLabelPosition, dtopLabelSize}
+end getDesktopLabelPosSize
+
+on getDockPosSize()
+	tell application "System Events" to tell application process "Dock" to return {position, size} of list 1
+end getDockPosSize
+
+use framework "AppKit"
+use framework "Foundation"
+use scripting additions
+
+on getDockBounds()
+	set theScreen to current application's NSScreen's mainScreen()
+	set {{aF, bF}, {cF, dF}} to theScreen's frame()
+	set {{aV, bV}, {cV, dV}} to theScreen's visibleFrame()
+	return {aF as integer, dV as integer, cF as integer, dF as integer}
+end getDockBounds
+
+on getScreenBounds()
+	set theScreen to current application's NSScreen's mainScreen()
+	set {{aF, bF}, {cF, dF}} to theScreen's frame()
+	return {aF as integer, bF as integer, cF as integer, dF as integer}
+end getScreenBounds
+
+on getMaximizeBounds()
+	set theScreen to current application's NSScreen's mainScreen()
+	set {{aF, bF}, {cF, dF}} to theScreen's frame()
+	set {{aV, bV}, {cV, dV}} to theScreen's visibleFrame()
+	return {aV as integer, (dF - bV - dV) as integer, (aV + cV) as integer, (dF - bV) as integer}
+end getMaximizeBounds
