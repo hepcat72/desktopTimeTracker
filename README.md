@@ -28,7 +28,23 @@ rleach@princeton.edu
 
 ## Installation
 
-1. Put a Stickies.app sticky note on each desktop containing a single-word desktop name (as the first word on the first line of the sticky).  The first line must also contain the string "dtop" (without the quotes).
+### 1. Label each desktop using a Stickies.app window, using either a provided convenience script, or manually (following the specific instructions below):
+
+#### Using `trackThisDesktop.osa`
+
+`trackThisDesktop.osa` can be run from the command like:
+
+```
+osascript trackThisDesktop.osa
+```
+
+It will prompt you to enter a 1-word project name and create a Stickies window that `desktopTimeTracker.osa` (running in a cron job) will recognize and extract the project name whenever you are on that desktop.
+
+Note that this does not fix the issue of Stickies windows moving after reboot.  If the windows already exist, you will have to put them back on their original desktops after reboot.  I have a fairly heavy-handed script I use myself for automating this task (but it currently requires a second monitor).  I may try and adapt it in a lightweight manner for this repo at some point in the future.  Until then, hopefully `trackThisDesktop.osa` will make at least creating the initial labels a bit easier.
+
+#### Manual method
+
+Put a Stickies.app sticky note on each desktop containing a single-word desktop name (as the first word on the first line of the sticky).  The first line must also contain the string "dtop" (without the quotes).
 
 Example:
 
@@ -36,7 +52,7 @@ Example:
 
 Be sure that Stickies.app is not assigned to any desktop.
 
-2. Create a cron job
+### 2. Create a cron job
 
 Open your crontab file with:
 
@@ -51,7 +67,9 @@ Example:
 The above, on macOS, runs once a minute on weekdays
 Note that the first time it runs, you will need to set permissions.  I have not yet documented these permissions, so you're on your own.
 
-3. Install gnuplot
+### 3. OPTIONAL: Install gnuplot
+
+The perl script (`desktopTimeTrackerPlots.pl`) calls `gnuplot`, but it also generate plottable data files, so that you can use whatever plotting tool you wish.  But if you want the script to create PNG files with your time plotted in bar plots, you must install `gnuplot`.
 
 https://ports.macports.org/port/gnuplot/
 
