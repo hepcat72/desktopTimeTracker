@@ -1,3 +1,5 @@
+#!/usr/bin/env osascript
+
 -- Mission Control Desktop Time Tracker
 -- What is this: This is a script intended to be run via a cron job that logs (once a minute, or however frequently you run it) your current desktop name, cursor position, monitor, app, window name, and other customizable data to a project log file.
 -- Purpose: Track time spent on projects that are organized by desktop (or custom-set app).  See this stack post for an overview and examples: https://apple.stackexchange.com/a/470628/55021

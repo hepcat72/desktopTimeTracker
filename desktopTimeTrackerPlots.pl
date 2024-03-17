@@ -7,19 +7,38 @@
 
 use CommandLineInterface;
 
-addInfileOption(GETOPTKEY => 'i');
+setScriptInfo(VERSION => '1.0',
+              CREATED => 'circa 2020',
+              AUTHOR  => 'Robert Leach',
+              CONTACT => 'rleach@princeton.edu',
+              COMPANY => 'Princeton University',
+              LICENSE => 'Copyright 2020',
+              HELP    => 'Generate plots & plot data for ' .
+              'desktopTimeTracker.  This script will generate tab-deliminted ' .
+              'plotting data and it will attempt to generate and open ' .
+              'graphical plots using gnuplot (a separate dependency).');
+
+addInfileOption(GETOPTKEY => 'i|infile|project-log-file',
+                SMRY_DESC => 'Input file generated using a ' .
+                'desktopTimeTracker.osa cron job.',
+                FORMAT    => 'Tab-delimited file.  See the comments at the ' .
+                'top of desktopTimeTracker.osa for a description and ' .
+                'examples of the format.');
+
 my $sufftime = time();
-my $o1 = addOutfileSuffixOption(GETOPTKEY => 'c',
-                                DEFAULT   => '.' . $sufftime . '.days.txt');
-my $o2 = addOutfileSuffixOption(GETOPTKEY => 'p',
-                                DEFAULT   => '.' . $sufftime . '.projects.txt');
+my $o1 = addOutfileSuffixOption(GETOPTKEY => 'c|day-plot-data-suffix',
+                                DEFAULT   => '.' . $sufftime . '.days.txt',
+                                FORMAT    => 'Tab-delimited text file.');
+my $o2 = addOutfileSuffixOption(GETOPTKEY => 'p|project-plot-data-suffix',
+                                DEFAULT   => '.' . $sufftime . '.projects.txt',
+                                FORMAT    => 'Tab-delimited text file.');
 my $num_rec_days = undef;
-addOption(GETOPTKEY => 'd=i',
+addOption(GETOPTKEY => 'd|days=i',
           GETOPTVAL => \$num_rec_days,
           SMRY_DESC => 'Number of days to include.',
           DEFAULT   => 7);
 my $workminspday = undef;
-addOption(GETOPTKEY => 'm=i',
+addOption(GETOPTKEY => 'm|workday-mins=i',
           GETOPTVAL => \$workminspday,
           SMRY_DESC => 'Number of minutes in a workday.',
           LONG_DESC => 'Number of minutes in a workday.  Note, there is no ' .
@@ -29,9 +48,9 @@ addOption(GETOPTKEY => 'm=i',
           'project.  This max is only used to fill in idle time based on a ' .
           'lack of cursor movement.',
           DEFAULT   => 480);
-my $inactmin = 5;
-addOption(GETOPTKEY => 'minimum-idle-count=i',
-          GETOPTVAL => \$workminspday,
+my $inactmin = undef;
+addOption(GETOPTKEY => 'b|minimum-idle-count=i',
+          GETOPTVAL => \$inactmin,
           SMRY_DESC => 'Minimum number of intervals where no cursor movement ' .
           'is inferred to mean inactivity.',
           LONG_DESC => 'Minimum number of intervals (i.e. log entries) ' .
@@ -41,7 +60,7 @@ addOption(GETOPTKEY => 'minimum-idle-count=i',
           'entry once a minute, then after 5 minutes where the cursor has ' .
           'not moved, all time where the cursor was idle is counted as ' .
           'inactive time (i.e. you are not working).',
-          DEFAULT   => 480);
+          DEFAULT   => 5);
 
 
 my $dinf         = getInfile();
@@ -198,9 +217,9 @@ sub plotProjects
     my $df        = $_[0];
     my $startdate = $_[1];
     my $stopdate  = $_[2];
-    my $of  = "$df.png";
-    my $ttl = "Project Tracking $startdate - $stopdate";
-    my $gsf = "$of.gps";
+    my $of        = "$df.png";
+    my $ttl       = "Project Tracking $startdate - $stopdate";
+    my $gsf       = "$of.gps";
 
     openOut(*SCPT,$gsf) || exit(4);
     my $gsc =<< "GNUPLOT";
@@ -231,13 +250,13 @@ GNUPLOT
 #Globals used: $sufftime
 sub plotDays
   {
-    my $ph  = $_[0];
-    my $df  = $_[1];
+    my $ph        = $_[0];
+    my $df        = $_[1];
     my $startdate = $_[2];
     my $stopdate  = $_[3];
-    my $of  = $df . '.png';
-    my $ttl = "Day Tracking $startdate - $stopdate";
-    my $gsf = "$of.gps";
+    my $of        = $df . '.png';
+    my $ttl       = "Day Tracking $startdate - $stopdate";
+    my $gsf       = "$of.gps";
 
     openOut(*SCPT,$gsf) || exit(5);
 
